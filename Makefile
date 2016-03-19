@@ -19,3 +19,6 @@ invert: invert.c
 
 grey: grey.c
 	$(CC) $(CFLAGS) -o $@ grey.c
+
+dummy: dummy.c
+	$(CC) $(CFLAGS) -o $@ dummy.c
