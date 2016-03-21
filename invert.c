@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "ff.h"
+#include "libshmff.h"
 
 void
 usage(void)
@@ -23,11 +24,9 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	struct shm_ff shmff_r;
-	struct shm_ff shmff_w;
-	struct px *ff_r;
-	struct px *ff_w;
-	int shmid;
+	struct shmff shmff_r, shmff_w;
+	struct px *ff_r, *ff_w;
+	struct hdr *hdr_r = NULL, *hdr_w = NULL;
 	unsigned int jobs = 1;
 	int ch;
 
@@ -49,45 +48,13 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (fread(&shmff_r, sizeof shmff_r, 1, stdin) < 1)
-		err(EXIT_FAILURE, "unable to read ff shm header");
+	setshmff(&hdr_r, &hdr_w, &shmff_r, &shmff_w, &ff_r, &ff_w);
 
-	if (fread(&shmff_w, sizeof shmff_w, 1, stdin) < 1)
-		err(EXIT_FAILURE, "unable to read ff shm header");
-
-	/* Locate and attach ff shm segment for reading */
-	if ((shmid = shmget(shmff_r.key, shmff_r.size, 0666)) == -1)
-		err(EXIT_FAILURE, "shmget");
-	if ((ff_r = shmat(shmid, NULL, 0)) == (void *) -1)
-		err(EXIT_FAILURE, "shmat");
-
-	/* Locate and attach ff shm segment for reading */
-	if ((shmid = shmget(shmff_w.key, shmff_w.size, 0666)) == -1)
-		err(EXIT_FAILURE, "shmget");
-	if ((ff_w = shmat(shmid, NULL, 0)) == (void *) -1)
-		err(EXIT_FAILURE, "shmat");
-
-	size_t px_n = shmff_r.width * shmff_r.height;
-	size_t job_len = px_n / jobs;
+	size_t px_n = hdr_r->width * hdr_r->height;
 	size_t off = 0;
-	bool child = false;
 
-	/* fork sub jobs */
-	for (; jobs > 1; jobs--) {
-		switch (fork()) {
-		case -1:
-			err(EXIT_FAILURE, "fork");
-		case 0:
-			off += job_len;
-			break;
-		default:
-			child = true;
-			px_n = off + job_len;
-			goto process;
-		}
-	}
+	int child = fork_jobs(jobs, &off, &px_n);
 
- process:
 	for (size_t p = off; p < px_n; p++) {
 		/* invert colors */
 		ff_w[p].red   = UINT16_MAX - ff_r[p].red;
@@ -96,7 +63,7 @@ main(int argc, char *argv[])
 		ff_w[p].alpha = ff_r[p].alpha;
 	}
 
-	if (!child) {
+	if (child == 0) {
 		int status;
 		wait(&status);
 		if (status != EXIT_SUCCESS)

@@ -3,6 +3,7 @@
 #include <sys/shm.h>
 
 #include <err.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -26,7 +27,7 @@ signal_handler(int sig)
 }
 
 void
-convert(const char *prog, struct shm_ff *shmff_r, struct shm_ff *shmff_w)
+convert(const char *prog, struct shmff *shmff_r, struct shmff *shmff_w)
 {
 	FILE *ph;
 
@@ -42,11 +43,11 @@ convert(const char *prog, struct shm_ff *shmff_r, struct shm_ff *shmff_w)
 		err(EXIT_FAILURE, "pclose");
 }
 
-void
-convert_cmds(struct shm_ff *shmff_one, struct shm_ff *shmff_two)
+struct shmff *
+convert_cmds(struct shmff *shmff_one, struct shmff *shmff_two)
 {
 	char cmd[BUFSIZ];
-	struct shm_ff *shmff_tmp;
+	struct shmff *shmff_tmp;
 
 	while (fgets(cmd, sizeof cmd, stdin) != NULL) {
 		convert(cmd, shmff_one, shmff_two);
@@ -56,10 +57,12 @@ convert_cmds(struct shm_ff *shmff_one, struct shm_ff *shmff_two)
 		shmff_one = shmff_two;
 		shmff_two = shmff_tmp;
 	}
+
+	return shmff_one;
 }
 
 void
-benchmark_cmd(const char *cmd, struct shm_ff *shmff_r, struct shm_ff *shmff_w)
+benchmark_cmd(const char *cmd, struct shmff *shmff_r, struct shmff *shmff_w)
 {
 	uint64_t benchmark_counter;
 
@@ -105,29 +108,49 @@ shm2file(const char *file, struct hdr *hdr, struct px *ff)
 void
 usage(void)
 {
-	fputs("shmff [-hb] <in file> <out file> [algorithm]\n", stderr);
+	fputs("shmff [-hb] [-W width] [-H height] <in file> <out file>"
+	    " [algorithm]\n", stderr);
 	exit(EXIT_FAILURE);
 }
 
 int
 main(int argc, char *argv[])
 {
-	int shmid;
+	int shmid_r;
+	int shmid_w;
 	int ch;
 	key_t key_r;	/* read page */
 	key_t key_w;	/* write page */
 	FILE *fh = stdin;
 	char *file_in = NULL;
 	char *file_out = NULL;
+	size_t width = 0;
+	size_t height = 0;
 
 	struct hdr hdr;
+	struct hdr *hdr_r;
+	struct hdr *hdr_w;
 	struct px *ff_r = NULL;
 	struct px *ff_w = NULL;
 
-	while ((ch = getopt(argc, argv, "bh")) != -1) {
+	while ((ch = getopt(argc, argv, "bW:H:h")) != -1) {
 		switch (ch) {
 		case 'b':
 			benchmark = true;
+			break;
+		case 'W':
+			if ((width = strtoul(optarg, NULL, 0)) == 0) {
+				if (errno != 0)
+					err(EXIT_FAILURE, "strtoul");
+				errx(EXIT_FAILURE, "invailed width");
+			}
+			break;
+		case 'H':
+			if ((height = strtoul(optarg, NULL, 0)) == 0) {
+				if (errno != 0)
+					err(EXIT_FAILURE, "strtoul");
+				errx(EXIT_FAILURE, "invailed height");
+			}
 			break;
 		case 'h':
 		default:
@@ -161,23 +184,28 @@ main(int argc, char *argv[])
 	hdr.height = ntohl(hdr.height);
 
 	size_t px_n = hdr.width * hdr.height;
-	size_t ff_size = hdr.width * hdr.height * sizeof(struct px);
+	size_t ff_size = sizeof(hdr) + hdr.width * hdr.height * sizeof(struct px);
 
 	/* generate name of shm segment by file path */
 	key_r = ftok(file_in, KEY_ID_READ);
 	key_w = ftok(file_in, KEY_ID_WRITE);
 
 	/* Create and attach the shm segment for reading.  */
-	if ((shmid = shmget(key_r, ff_size, IPC_CREAT | 0666)) < 0)
+	if ((shmid_r = shmget(key_r, ff_size, IPC_CREAT | 0666)) < 0)
 		err(EXIT_FAILURE, "shmget 1");
-	if ((ff_r = shmat(shmid, NULL, 0)) == (void *) -1)
+	if ((hdr_r = shmat(shmid_r, NULL, 0)) == (void *) -1)
 		err(EXIT_FAILURE, "shmat");
 
 	/* Create and attach the shm segment for writing.  */
-	if ((shmid = shmget(key_w, ff_size, IPC_CREAT | 0666)) < 0)
+	if ((shmid_w = shmget(key_w, ff_size, IPC_CREAT | 0666)) < 0)
 		err(EXIT_FAILURE, "shmget 2");
-	if ((ff_w = shmat(shmid, NULL, 0)) == (void *) -1)
+	if ((hdr_w = shmat(shmid_r, NULL, 0)) == (void *) -1)
 		err(EXIT_FAILURE, "shmat");
+
+	memcpy(hdr_r, &hdr, sizeof hdr);
+
+	ff_r = (struct px *)(hdr_r + 1);
+	ff_w = (struct px *)(hdr_w + 1);
 
 	/* read image into memory */
 	for (size_t p = 0; p < px_n; p++) {
@@ -194,12 +222,10 @@ main(int argc, char *argv[])
 	if (fclose(fh) == EOF)
 		err(EXIT_FAILURE, "fclose");
 
-	struct shm_ff shmff_r;
-	struct shm_ff shmff_w;
+	struct shmff shmff_r;
+	struct shmff shmff_w;
 
-	shmff_r.width  = shmff_w.width  = hdr.width;
-	shmff_r.height = shmff_w.height = hdr.height;
-	shmff_r.size   = shmff_w.size   = ff_size;
+	shmff_r.size = shmff_w.size = ff_size;
 	shmff_r.key = key_r;
 	shmff_w.key = key_w;
 
@@ -211,7 +237,18 @@ main(int argc, char *argv[])
 		convert_cmds(&shmff_r, &shmff_w);
 	}
 
-	shm2file(file_out, &hdr, ff_r);
+	shm2file(file_out, hdr_w, ff_w);
+
+	/* unmap */
+	if (shmdt(hdr_r) == -1)
+		err(EXIT_FAILURE, "shmdt");
+	if (shmdt(hdr_w) == -1)
+		err(EXIT_FAILURE, "shmdt");
+
+	if (shmctl(shmid_r, IPC_RMID, NULL) == -1)
+		err(EXIT_FAILURE, "shmctl");
+	if (shmctl(shmid_w, IPC_RMID, NULL) == -1)
+		err(EXIT_FAILURE, "shmctl");
 
 	return EXIT_SUCCESS;
 }

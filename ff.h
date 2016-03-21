@@ -1,10 +1,18 @@
 #ifndef FF_H
 #define FF_H
 
+/*
+ * farbfeld
+ * sharedff
+ */
+
+#define PARENT 0
+#define CHILD  1
+
 struct hdr {
-	char		magic[8];
-	uint32_t	width;
-	uint32_t	height;
+	char     magic[8];
+	uint32_t width;
+	uint32_t height;
 };
 
 struct px {
@@ -14,11 +22,10 @@ struct px {
 	uint16_t alpha;
 };
 
-struct shm_ff {
-	uint32_t width;
-	uint32_t height;
-	size_t size;
-	key_t key;
+struct shmff {
+	char	magic[8];
+	key_t	key;
+	size_t	size;
 };
 
 #endif

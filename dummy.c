@@ -9,33 +9,19 @@
 #include <string.h>
 
 #include "ff.h"
+#include "libshmff.h"
 
 int
 main(void)
 {
-	struct shm_ff shmff_r;
-	struct shm_ff shmff_w;
+	struct shmff shmff_r;
+	struct shmff shmff_w;
 	struct px *ff_r;
 	struct px *ff_w;
-	int shmid;
+	struct hdr *hdr_r;
+	struct hdr *hdr_w;
 
-	if (fread(&shmff_r, sizeof shmff_r, 1, stdin) < 1)
-		err(EXIT_FAILURE, "unable to read ff shm header");
-
-	if (fread(&shmff_w, sizeof shmff_w, 1, stdin) < 1)
-		err(EXIT_FAILURE, "unable to read ff shm header");
-
-	/* Locate and attach ff shm segment for reading */
-	if ((shmid = shmget(shmff_r.key, shmff_r.size, 0666)) == -1)
-		err(EXIT_FAILURE, "shmget");
-	if ((ff_r = shmat(shmid, NULL, 0)) == (void *) -1)
-		err(EXIT_FAILURE, "shmat");
-
-	/* Locate and attach ff shm segment for reading */
-	if ((shmid = shmget(shmff_w.key, shmff_w.size, 0666)) == -1)
-		err(EXIT_FAILURE, "shmget");
-	if ((ff_w = shmat(shmid, NULL, 0)) == (void *) -1)
-		err(EXIT_FAILURE, "shmat");
+	setshmff(&hdr_r, &hdr_w, &shmff_r, &shmff_w, &ff_r, &ff_w);
 
 	memmove(ff_w, ff_r, shmff_r.size);
 
