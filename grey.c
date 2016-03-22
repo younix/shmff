@@ -64,12 +64,5 @@ main(int argc, char *argv[])
 		ff_w[p].alpha = ff_r[p].alpha;
 	}
 
-	if (child == 0) {
-		int status;
-		wait(&status);
-		if (status != EXIT_SUCCESS)
-			return EXIT_FAILURE;
-	}
-
-	return EXIT_SUCCESS;
+	return catch_jobs(jobs, child);
 }

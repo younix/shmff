@@ -3,11 +3,10 @@
 cpus=$(sysctl -n hw.ncpu)
 
 ./shmff "maria.ff" "out.ff" <<EOF
-./grey -j $cpus
 ./invert -j $cpus
-./dummy
+./grey -j $cpus
 EOF
-#./crop 0 0 100 100
+#./dummy
 #./invert -j $cpus
 #./grey -j $cpus
-#./dummy
+#./crop 0 0 100 100

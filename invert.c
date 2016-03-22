@@ -63,10 +63,12 @@ main(int argc, char *argv[])
 	}
 
 	if (child == 0) {
-		int status;
-		wait(&status);
-		if (status != EXIT_SUCCESS)
-			return EXIT_FAILURE;
+		for (;jobs > 1; jobs--) {
+			int status;
+			wait(&status);
+			if (status != EXIT_SUCCESS)
+				return EXIT_FAILURE;
+		}
 	}
 
 	return EXIT_SUCCESS;

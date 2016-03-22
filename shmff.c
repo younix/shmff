@@ -191,13 +191,13 @@ main(int argc, char *argv[])
 	key_w = ftok(file_in, KEY_ID_WRITE);
 
 	/* Create and attach the shm segment for reading.  */
-	if ((shmid_r = shmget(key_r, ff_size, IPC_CREAT | 0666)) < 0)
+	if ((shmid_r = shmget(key_r, ff_size, IPC_CREAT | 0600)) < 0)
 		err(EXIT_FAILURE, "shmget 1");
 	if ((hdr_r = shmat(shmid_r, NULL, 0)) == (void *) -1)
 		err(EXIT_FAILURE, "shmat");
 
 	/* Create and attach the shm segment for writing.  */
-	if ((shmid_w = shmget(key_w, ff_size, IPC_CREAT | 0666)) < 0)
+	if ((shmid_w = shmget(key_w, ff_size, IPC_CREAT | 0600)) < 0)
 		err(EXIT_FAILURE, "shmget 2");
 	if ((hdr_w = shmat(shmid_w, NULL, 0)) == (void *) -1)
 		err(EXIT_FAILURE, "shmat");
