@@ -60,8 +60,9 @@ main(int argc, char *argv[])
 		/* convert pixel to grey */
 		ff_w[p].red = ff_w[p].green = ff_w[p].blue =
 		   (ff_r[p].red   * 30 +
-		    ff_w[p].green * 59 +
+		    ff_r[p].green * 59 +
 		    ff_r[p].blue  * 11) / 100;
+
 		ff_w[p].alpha = ff_r[p].alpha;
 	}
 
