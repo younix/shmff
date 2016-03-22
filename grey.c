@@ -23,8 +23,6 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	struct shmff shmff_r;
-	struct shmff shmff_w;
 	struct hdr *hdr_r = NULL;
 	struct hdr *hdr_w = NULL;
 	struct px *ff_r = NULL;
@@ -50,7 +48,7 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	setshmff(&hdr_r, &hdr_w, &shmff_r, &shmff_w, &ff_r, &ff_w);
+	setshmff(&hdr_r, &hdr_w, &ff_r, &ff_w);
 
 	size_t px_n = hdr_r->width * hdr_r->height;
 	size_t off = 0;

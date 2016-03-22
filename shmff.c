@@ -199,7 +199,7 @@ main(int argc, char *argv[])
 	/* Create and attach the shm segment for writing.  */
 	if ((shmid_w = shmget(key_w, ff_size, IPC_CREAT | 0666)) < 0)
 		err(EXIT_FAILURE, "shmget 2");
-	if ((hdr_w = shmat(shmid_r, NULL, 0)) == (void *) -1)
+	if ((hdr_w = shmat(shmid_w, NULL, 0)) == (void *) -1)
 		err(EXIT_FAILURE, "shmat");
 
 	memcpy(hdr_r, &hdr, sizeof hdr);
@@ -233,11 +233,14 @@ main(int argc, char *argv[])
 		if (argc < 3)
 			usage();
 		benchmark_cmd(argv[2], &shmff_r, &shmff_w);
+		shm2file(file_out, hdr_w, ff_w);
 	} else {
-		convert_cmds(&shmff_r, &shmff_w);
+		if (convert_cmds(&shmff_r, &shmff_w) == &shmff_w) {
+			shm2file(file_out, hdr_w, ff_w);
+		} else {
+			shm2file(file_out, hdr_r, ff_r);
+		}
 	}
-
-	shm2file(file_out, hdr_w, ff_w);
 
 	/* unmap */
 	if (shmdt(hdr_r) == -1)
