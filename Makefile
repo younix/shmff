@@ -1,4 +1,4 @@
-CC = egcc
+CC = cc
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -Ofast
 
 BINS = shmff dummy invert grey crop kernel gauss
