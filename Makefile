@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -Ofast
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3
 
 BINS = shmff dummy invert grey crop kernel gauss
 
