@@ -54,7 +54,7 @@ main(int argc, char *argv[])
 	size_t off = 0;
 	int child = fork_jobs(jobs, &off, &px_n);
 
-	for (size_t p = 0; p < px_n; p++) {
+	for (size_t p = off; p < px_n; p++) {
 		/* convert pixel to grey */
 		ff_w[p].red = ff_w[p].green = ff_w[p].blue =
 		   (ff_r[p].red   * 30 +

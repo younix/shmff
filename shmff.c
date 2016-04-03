@@ -65,11 +65,19 @@ void
 benchmark_cmd(const char *cmd, struct shmff *shmff_r, struct shmff *shmff_w)
 {
 	uint64_t benchmark_counter;
+	time_t start_time, end_time;
+
+	if ((start_time = time(NULL)) == -1)
+		err(EXIT_FAILURE, "time");
 
 	for (benchmark_counter = 0; benchmark; benchmark_counter++)
 		convert(cmd, shmff_r, shmff_w);
 
-	fprintf(stderr, "%" PRId64 "\n", benchmark_counter);
+	if ((end_time = time(NULL)) == -1)
+		err(EXIT_FAILURE, "time");
+
+	fprintf(stderr, "%" PRId64 " rounds\n", benchmark_counter);
+	fprintf(stderr, "%" PRId64 " sec\n", end_time - start_time);
 }
 
 void
