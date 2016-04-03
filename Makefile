@@ -1,7 +1,7 @@
-CC ?= cc
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -g
+CC = egcc
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -Ofast
 
-BINS = shmff dummy invert grey crop
+BINS = shmff dummy invert grey crop kernel gauss
 
 .PHONY: all clean test
 all: $(BINS)
@@ -22,6 +22,12 @@ grey: grey.c ff.h libshmff.o
 
 crop: crop.c ff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ crop.c libshmff.o
+
+kernel: kernel.c ff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ kernel.c libshmff.o
+
+gauss: gauss.c ff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ gauss.c libshmff.o
 
 dummy: dummy.c ff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ dummy.c libshmff.o
