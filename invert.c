@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifdef SSE
+#include <emmintrin.h>
+#endif
+
 #include "ff.h"
 #include "libshmff.h"
 
@@ -54,7 +58,29 @@ main(int argc, char *argv[])
 
 	int child = fork_jobs(jobs, &off, &px_n);
 
+#ifdef SSE
+	__m128i op = _mm_set_epi16(0, UINT16_MAX, UINT16_MAX, UINT16_MAX,
+	                           0, UINT16_MAX, UINT16_MAX, UINT16_MAX);
+
+	__m128i al = _mm_set_epi16(UINT16_MAX, 0, 0, 0, UINT16_MAX, 0, 0, 0);
+
+	size_t p_len = px_n - off;
+	size_t i = (sizeof(*ff_r) * (p_len)) / sizeof(op);
+
+	for (; i > 0; i--) {
+		__m128i P = _mm_loadu_si128((__m128i *)&ff_r[off]);
+		__m128i C = _mm_subs_epu16(op, P);
+		C = _mm_adds_epu16(C, al);
+		_mm_storeu_si128((__m128i *)&ff_w[off], C);
+		off += 2;
+	}
+#endif
+
+//	fprintf(stderr, "off - px_n: %zu\n", px_n - off );
+
 	for (size_t p = off; p < px_n; p++) {
+//		fprintf(stderr, "after work!\n");
+
 		/* invert colors */
 		ff_w[p].red   = UINT16_MAX - ff_r[p].red;
 		ff_w[p].green = UINT16_MAX - ff_r[p].green;
