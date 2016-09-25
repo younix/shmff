@@ -15,34 +15,24 @@
 #include "ff.h"
 
 void
-setshmff(struct hdr **hdr_r, struct hdr **hdr_w, struct px **ff_r, struct px **ff_w)
+setshmff(struct hdr **hdr, struct px **ff)
 {
-	struct shmff shmff_r;
-	struct shmff shmff_w;
+	struct shmff shmff;
 	int shmid;
 
-	if (fread(&shmff_r, sizeof shmff_r, 1, stdin) < 1)
-		err(EXIT_FAILURE, "unable to read ff shm header");
-	if (fread(&shmff_w, sizeof shmff_w, 1, stdin) < 1)
+	if (fread(&shmff, sizeof shmff, 1, stdin) < 1)
 		err(EXIT_FAILURE, "unable to read ff shm header");
 
-	/* Locate and attach ff shm segment for reading */
-	if ((shmid = shmget(shmff_r.key, shmff_r.size, 0)) == -1)
+	if (memcmp(shmff.magic, "sharedff", sizeof(shmff.magic)) == 0)
+		errx(EXIT_FAILURE, "got incorrect header");
+
+	if ((shmid = shmget(shmff.key, shmff.size, 0)) == -1)
 		err(EXIT_FAILURE, "shmget");
-	if ((*hdr_r = shmat(shmid, NULL, 0)) == (void *) -1)
+
+	if ((*hdr = shmat(shmid, NULL, 0)) == (void *) -1)
 		err(EXIT_FAILURE, "shmat");
 
-	/* Locate and attach ff shm segment for reading */
-	if ((shmid = shmget(shmff_w.key, shmff_w.size, 0)) == -1)
-		err(EXIT_FAILURE, "shmget");
-	if ((*hdr_w = shmat(shmid, NULL, 0)) == (void *) -1)
-		err(EXIT_FAILURE, "shmat");
-
-	/* prepare hdr on writing page */
-	memmove(*hdr_w, *hdr_r, sizeof **hdr_r);
-
-	*ff_r = (struct px *)(*hdr_r + 1);
-	*ff_w = (struct px *)(*hdr_w + 1);
+	*ff = (struct px *)(*hdr + 1);
 }
 
 int

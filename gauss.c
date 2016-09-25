@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "ff.h"
@@ -47,7 +48,9 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	setshmff(&hdr_r, &hdr_w, &ff_r, &ff_w);
+	setshmff(&hdr_r, &ff_r);
+	setshmff(&hdr_w, &ff_w);
+	memmove(hdr_w, hdr_r, sizeof *hdr_r);
 
 	size_t px_n = hdr_r->width * hdr_r->height;
 	size_t off = 0;

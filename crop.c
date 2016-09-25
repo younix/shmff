@@ -57,7 +57,9 @@ main(int argc, char *argv[])
 	size_t W = strtoul(argv[2], NULL, 0);
 	size_t H = strtoul(argv[3], NULL, 0);
 
-	setshmff(&hdr_r, &hdr_w, &ff_r, &ff_w);
+	setshmff(&hdr_r, &ff_r);
+	setshmff(&hdr_w, &ff_w);
+	memmove(hdr_w, hdr_r, sizeof *hdr_r);
 
 	hdr_w->width = W;
 	hdr_w->height = H;
