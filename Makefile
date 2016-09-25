@@ -1,6 +1,6 @@
 CC = cc
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -D_XOPEN_SOURCE=500
-CFLAGS += -DSSE
+#CFLAGS += -DSSE
 
 #BINS = shmff dummy invert grey crop kernel gauss scale
 BINS = shmff dummy invert grey crop kernel gauss
