@@ -1,14 +1,29 @@
 CC = cc
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -D_XOPEN_SOURCE=500
+#CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -D_XOPEN_SOURCE=500
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3
 #CFLAGS += -DSSE
 
 #BINS = shmff dummy invert grey crop kernel gauss scale
 BINS = shmff dummy invert grey crop kernel gauss
 
-.PHONY: all clean test
-all: $(BINS)
+.PHONY: all install clean test
+all: ff2shm shm2ff dummy
 clean:
 	rm -f $(BINS) *.o *.core
+
+ff2shm: ff2shm.c shmff.h
+	$(CC) $(CFLAGS) -o $@ ff2shm.c
+
+shm2ff: shm2ff.c shmff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ shm2ff.c libshmff.o
+
+install: ff2shm shm2ff dummy
+	cp ff2shm shm2ff dummy $$HOME/bin
+
+dummy: dummy.c shmff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ dummy.c libshmff.o
+
+# OLD STUFF #
 
 test: shmff invert grey dummy in.ff
 	./test.sh
@@ -34,10 +49,7 @@ gauss: gauss.c ff.h libshmff.o
 scale: scale.c ff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ scale.c libshmff.o
 
-dummy: dummy.c ff.h libshmff.o
-	$(CC) $(CFLAGS) -o $@ dummy.c libshmff.o
-
-libshmff.o: libshmff.c
+libshmff.o: libshmff.c shmff.h
 	$(CC) $(CFLAGS) -c -o $@ libshmff.c
 
 # assembeler code
