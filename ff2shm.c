@@ -20,11 +20,8 @@
 
 #include "shmff.h"
 
-#define debug(level, ...) 			\
-	if ((level) >= verbose)			\
-		fprintf(stderr, __VA_ARGS__)
-
 static int verbose = 0;
+static struct timespec start;
 
 void
 usage(void)
@@ -45,6 +42,8 @@ main(int argc, char *argv[])
 	struct hdr hdr;
 	struct hdr *shm;
 	struct px *ff = NULL;
+
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
 	while ((ch = getopt(argc, argv, "vh")) != -1) {
 		switch (ch) {
@@ -92,8 +91,8 @@ main(int argc, char *argv[])
 	/* generate name of shm segment by file path */
 	key = ftok(file, 0);
 
-	debug(1, "key: %lu\n", key);
-	debug(1, "size: %zu\n", ff_size);
+	debug(1, start, "shm key: %lu", key);
+	debug(1, start, "shm size: %zu", ff_size);
 
 	/* Create and attach the shm segment for reading. */
 	if ((shmid = shmget(key, ff_size, IPC_CREAT | 0600)) == -1)
@@ -111,10 +110,10 @@ main(int argc, char *argv[])
 	 */
 	size_t p = 0;
 
-	debug(1, "read file content into memory\n");
+	debug(1, start, "read file content into memory");
 	if (fread(&ff[0], sizeof *ff, px_n, fh) < px_n)
 		err(EXIT_FAILURE, "unexpected end-of-file");
-	debug(1, "endian conversion\n");
+	debug(1, start,  "endian conversion");
 
 	/* skip 16 byte (2 pixel) for alignment */
 	for (; p < 2 && p < px_n; p++) {
@@ -126,7 +125,7 @@ main(int argc, char *argv[])
 
 #if __x86_64__ && AVX
 	/* TODO: check cpuid */
-	debug(1, "endian conversion with AVX2 instructions\n");
+	debug(1, start, "endian conversion with AVX2 instructions");
 	for (; (p + 4) < px_n; p += 4) {
 		__m256i a;
 		__m256i l;	/* left */
@@ -143,7 +142,7 @@ main(int argc, char *argv[])
 #endif
 #if __x86_64__ && SSE2
 	/* TODO: check cpuid */
-	debug(1, "endian conversion with SSE2 instructions\n");
+	debug(1, start, "endian conversion with SSE2 instructions");
 	for (; (p + 2) < px_n; p += 2) {
 		__m128i a;
 		__m128i l;	/* left */
@@ -177,6 +176,7 @@ main(int argc, char *argv[])
 	if (fwrite(&shmff, sizeof shmff, 1, stdout) < 1)
 		goto err;
 
+	debug(1, start, "exit");
 	return EXIT_SUCCESS;
 
  err:
