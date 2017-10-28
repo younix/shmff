@@ -1,6 +1,11 @@
 #ifndef _SHMFF_H_
 #define _SHMFF_H_
 
+#include <sys/time.h>
+
+#include <stdbool.h>
+#include <time.h>
+
 struct shmff {
 	char	magic[8];
 	key_t	key;
