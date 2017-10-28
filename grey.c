@@ -9,29 +9,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
-#include "ff.h"
-#include "libshmff.h"
+#include "shmff.h"
+
+static int verbose = 0;
+static struct timespec start;
 
 void
 usage(void)
 {
-	fputs("grey [-j jobs]\n", stderr);
+	fputs("grey [-v] [-j jobs]\n", stderr);
 	exit(EXIT_FAILURE);
 }
 
 int
 main(int argc, char *argv[])
 {
-	struct hdr *hdr_r = NULL;
-	struct hdr *hdr_w = NULL;
-	struct px *ff_r = NULL;
-	struct px *ff_w = NULL;
+	struct shmff shmff;
+	struct hdr *hdr;
+	struct px *ff;
 	unsigned int jobs = 1;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "j:h")) != -1) {
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+
+	while ((ch = getopt(argc, argv, "j:vh")) != -1) {
 		switch (ch) {
 		case 'j':
 			errno = 0;
@@ -41,6 +45,9 @@ main(int argc, char *argv[])
 				errx(EXIT_FAILURE, "invalid jobs");
 			}
 			break;
+		case 'v':
+			verbose++;
+			break;
 		case 'h':
 		default:
 			usage();
@@ -49,23 +56,42 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	setshmff(&hdr_r, &ff_r);
-	setshmff(&hdr_w, &ff_w);
-	memmove(hdr_w, hdr_r, sizeof *hdr_r);
+	/* read shmff structure from stdin */
+	if (shmff_load(&shmff, &hdr, &ff) == -1)
+		err(EXIT_FAILURE, "shmff_load");
 
-	size_t px_n = hdr_r->width * hdr_r->height;
+	debug(1, start, "start %d jobs", jobs);
+
+	size_t px_n = hdr->width * hdr->height;
 	size_t off = 0;
 	int child = fork_jobs(jobs, &off, &px_n);
 
 	for (size_t p = off; p < px_n; p++) {
 		/* convert pixel to grey */
-		ff_w[p].red = ff_w[p].green = ff_w[p].blue =
-		   (ff_r[p].red   * 30 +
-		    ff_r[p].green * 59 +
-		    ff_r[p].blue  * 11) / 100;
+		ff[p].red = ff[p].green = ff[p].blue =
+		   (ff[p].red   * 30 +
+		    ff[p].green * 59 +
+		    ff[p].blue  * 11) / 100;
 
-		ff_w[p].alpha = ff_r[p].alpha;
+		ff[p].alpha = ff[p].alpha;
 	}
 
-	return catch_jobs(jobs, child);
+	if (catch_jobs(jobs, child) != EXIT_SUCCESS)
+		goto err;
+
+	/* write shmff structure to stdout */
+	if (child == 0) {
+		debug(1, start, "write shm info to stdout");
+		if (fwrite(&shmff, sizeof shmff, 1, stdout) < 1) {
+			perror("fwrite");
+			goto err;
+		}
+	}
+
+	return EXIT_SUCCESS;
+ err:
+	if (shmff_free(&shmff, hdr) == -1)
+		perror("shmff_free");
+
+	return EXIT_FAILURE;
 }

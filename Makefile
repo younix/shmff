@@ -8,7 +8,7 @@ CFLAGS += -DAVX -mavx2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
 BINS = shmff dummy invert grey crop kernel gauss
 
 .PHONY: all install clean test
-all: ff2shm shm2ff dummy
+all: ff2shm shm2ff dummy grey
 clean:
 	rm -f $(BINS) *.o *.core
 
@@ -18,11 +18,14 @@ ff2shm: ff2shm.c shmff.h
 shm2ff: shm2ff.c shmff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ shm2ff.c libshmff.o
 
-install: ff2shm shm2ff dummy
-	cp ff2shm shm2ff dummy $$HOME/bin
+install: ff2shm shm2ff dummy grey
+	cp ff2shm shm2ff dummy grey $$HOME/bin
 
 dummy: dummy.c shmff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ dummy.c libshmff.o
+
+grey: grey.c shmff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ grey.c libshmff.o
 
 # OLD STUFF #
 
@@ -34,9 +37,6 @@ shmff: shmff.c ff.h
 
 invert: invert.c ff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ invert.c libshmff.o
-
-grey: grey.c ff.h libshmff.o
-	$(CC) $(CFLAGS) -o $@ grey.c libshmff.o
 
 crop: crop.c ff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ crop.c libshmff.o

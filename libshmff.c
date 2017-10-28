@@ -3,36 +3,54 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include <err.h>
-#include <errno.h>
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "ff.h"
+#include "shmff.h"
 
-void
-setshmff(struct hdr **hdr, struct px **ff)
+int
+shmff_load(struct shmff *shmff, struct hdr **hdr, struct px **ff)
 {
-	struct shmff shmff;
 	int shmid;
 
-	if (fread(&shmff, sizeof shmff, 1, stdin) < 1)
-		err(EXIT_FAILURE, "unable to read ff shm header");
+	if (fread(shmff, sizeof *shmff, 1, stdin) < 1)
+		return -1;
 
-	if (memcmp(shmff.magic, "sharedff", sizeof(shmff.magic)) == 0)
-		errx(EXIT_FAILURE, "got incorrect header");
+	if (memcmp(shmff->magic, "sharedff", sizeof(shmff->magic)) == 0)
+		return -1;	/* incorrect header */
 
-	if ((shmid = shmget(shmff.key, shmff.size, 0)) == -1)
-		err(EXIT_FAILURE, "shmget");
+	if ((shmid = shmget(shmff->key, shmff->size, 0)) == -1)
+		return -1;
 
 	if ((*hdr = shmat(shmid, NULL, 0)) == (void *) -1)
-		err(EXIT_FAILURE, "shmat");
+		return -1;
 
 	*ff = (struct px *)(*hdr + 1);
+
+	return 0;
+}
+
+int
+shmff_free(struct shmff *shmff, struct hdr *hdr)
+{
+	int shmid;
+
+	/* unmap */
+	if (shmdt(hdr) == -1)
+		return -1;
+
+	if ((shmid = shmget(shmff->key, shmff->size, 0)) == -1)
+		return -1;
+
+	/* delete */
+	if (shmctl(shmid, IPC_RMID, NULL) == -1)
+		return -1;
+
+	return 0;
 }
 
 int
@@ -43,17 +61,17 @@ fork_jobs(int jobs, size_t *off, size_t *px_n)
 	for (; jobs > 1; jobs--) {
 		switch (fork()) {
 		case -1:
-			err(EXIT_FAILURE, "fork");
-		case 0:
+			return -1;
+		case 0:	/* child */
 			*off += job_len;
-			break;
-		default:
+			return 1;
+		default: /* parent */
 			*px_n = *off + job_len;
-			return 0;
+			break;
 		}
 	}
 
-	return 1;
+	return 0;
 }
 
 int
