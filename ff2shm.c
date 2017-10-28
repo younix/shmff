@@ -14,11 +14,15 @@
 #include <time.h>
 #include <unistd.h>
 
+#if __x86_64__ && (SSE2 || AVX)
+#include <immintrin.h>
+#endif
+
 #include "shmff.h"
 
 #define debug(level, ...) 			\
 	if ((level) >= verbose)			\
-		fprintf(stderr, __VA_ARGS__);
+		fprintf(stderr, __VA_ARGS__)
 
 static int verbose = 0;
 
@@ -86,7 +90,7 @@ main(int argc, char *argv[])
 	/* XXX: check shmmax limit */
 
 	/* generate name of shm segment by file path */
-	key = ftok(file, 3);
+	key = ftok(file, 0);
 
 	debug(1, "key: %lu\n", key);
 	debug(1, "size: %zu\n", ff_size);
@@ -102,12 +106,60 @@ main(int argc, char *argv[])
 
 	ff = (struct px *)(shm + 1);
 
-	/* read image into memory */
-	for (size_t p = 0; p < px_n; p++) {
-		if (fread(&ff[p], sizeof *ff, 1, fh) < 1)
-			err(EXIT_FAILURE, "unexpected end-of-file");
+	/*
+	 * read image data into memory and convert net endian to host endian
+	 */
+	size_t p = 0;
 
-		/* convert net endian to host endian */
+	debug(1, "read file content into memory\n");
+	if (fread(&ff[0], sizeof *ff, px_n, fh) < px_n)
+		err(EXIT_FAILURE, "unexpected end-of-file");
+	debug(1, "endian conversion\n");
+
+	/* skip 16 byte (2 pixel) for alignment */
+	for (; p < 2 && p < px_n; p++) {
+		ff[p].red   = ntohs(ff[p].red);
+		ff[p].green = ntohs(ff[p].green);
+		ff[p].blue  = ntohs(ff[p].blue);
+		ff[p].alpha = ntohs(ff[p].alpha);
+	}
+
+#if __x86_64__ && AVX
+	/* TODO: check cpuid */
+	debug(1, "endian conversion with AVX2 instructions\n");
+	for (; (p + 4) < px_n; p += 4) {
+		__m256i a;
+		__m256i l;	/* left */
+		__m256i r;	/* right */
+
+		a = _mm256_load_si256((__m256i *)&ff[p]);
+
+		l = _mm256_slli_epi16(a, 8);
+		r = _mm256_srli_epi16(a, 8);
+		a = _mm256_or_si256(l, r);
+
+		_mm256_store_si256((__m256i *)&ff[p], a);
+	}
+#endif
+#if __x86_64__ && SSE2
+	/* TODO: check cpuid */
+	debug(1, "endian conversion with SSE2 instructions\n");
+	for (; (p + 2) < px_n; p += 2) {
+		__m128i a;
+		__m128i l;	/* left */
+		__m128i r;	/* right */
+
+		a = _mm_load_si128((__m128i *)&ff[p]);
+
+		l = _mm_slli_epi16(a, 8);
+		r = _mm_srli_epi16(a, 8);
+		a = _mm_or_si128 (l, r);
+
+		_mm_store_si128((__m128i *)&ff[p], a);
+	}
+#endif
+
+	for (; p < px_n; p++) {
 		ff[p].red   = ntohs(ff[p].red);
 		ff[p].green = ntohs(ff[p].green);
 		ff[p].blue  = ntohs(ff[p].blue);
