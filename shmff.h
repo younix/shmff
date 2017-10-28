@@ -35,7 +35,7 @@ int catch_jobs(int jobs, int child);
 
 #define debug(level, start, ...)					\
 	do {								\
-		if ((level) >= verbose) {				\
+		if ((level) <= verbose) {				\
 			struct timespec time;				\
 			clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time);	\
 			timespecsub(&time, &(start), &time);		\
