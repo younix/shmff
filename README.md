@@ -1,11 +1,11 @@
 # shmff
 
-shmff - shared memory farbfeld - is an image processing tool.
+shmff - *shared memory farbfeld* - is an image processing tool.
 It is prove of concept for fast image manipulation with the unix philosophy in
 mind.
 shmff uses farbfeld as a general image representation format.
 
-# programs
+# Tools
 
 The following programs are the core tools of this project.
 They load/store a farbfeld image into/from memory/file system.
@@ -77,7 +77,9 @@ structure to stdout.
 
 **In cases of an error, the program have to delete all shared memory pages.**
 
-# performance
+# Performance
+
+**CAUTION: outdated**
 
  * 242 cycles per 10sec on iMac
  *  97 cycles per 10sec on X1 carbon
