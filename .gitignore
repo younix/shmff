@@ -1,4 +1,12 @@
-invert
-shmff
 *.ff
 *.ff.bz2
+*.swp
+*.core
+*.o
+invert
+dummy
+ff2shm
+grey
+shm2ff
+tags
+ktrace.out
