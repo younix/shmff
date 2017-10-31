@@ -1,30 +1,32 @@
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
 #include <err.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
-#include "ff.h"
-#include "libshmff.h"
+#include "shmff.h"
 
 int
 main(void)
 {
-	struct px *ff_r;
-	struct px *ff_w;
-	struct hdr *hdr_r;
-	struct hdr *hdr_w;
+	struct shmff shmff;
+	struct hdr *hdr;
+	struct px *ff;
 
-	setshmff(&hdr_r, &ff_r);
-	setshmff(&hdr_w, &ff_w);
+	/* read shmff structure from stdin */
+	if (shmff_load(&shmff, &hdr, &ff) == -1)
+		err(EXIT_FAILURE, "shmff_load");
 
-	memmove(hdr_r, hdr_r,
-	    sizeof(*hdr_r) + sizeof(*ff_r) * hdr_r->width * hdr_r->height);
+	/* do some stuff with the pixels in ff ... */
+
+	/* write shmff structure to stdout */
+	if (fwrite(&shmff, sizeof shmff, 1, stdout) < 1) {
+		perror("fwrite");
+		goto err;
+	}
 
 	return EXIT_SUCCESS;
+ err:
+	if (shmff_free(&shmff, hdr) == -1)
+		perror("shmff_free");
+	return EXIT_FAILURE;
 }
