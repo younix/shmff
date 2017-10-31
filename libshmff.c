@@ -20,7 +20,7 @@ shmff_load(struct shmff *shmff, struct hdr **hdr, struct px **ff)
 	if (fread(shmff, sizeof *shmff, 1, stdin) < 1)
 		return -1;
 
-	if (memcmp(shmff->magic, "sharedff", sizeof(shmff->magic)) == 0)
+	if (memcmp(shmff->magic, "sharedff", sizeof(shmff->magic)) != 0)
 		return -1;	/* incorrect header */
 
 	if ((shmid = shmget(shmff->key, shmff->size, 0)) == -1)
