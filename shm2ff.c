@@ -54,12 +54,11 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	/* TODO: check that stdin is not a terminal */
+	if (isatty(fileno(stdin)))
+		errx(EXIT_FAILURE, "input is a terminal");
 
 	if (argc < 1)
 		usage();
-
-	/* TODO: add use of stdout here */
 
 	file = argv[0];
 
@@ -74,6 +73,9 @@ main(int argc, char *argv[])
 		if ((fh = fopen(file, "w")) == NULL)
 			err(EXIT_FAILURE, "fopen");
 	}
+
+	if (isatty(fileno(fh)))
+		errx(EXIT_FAILURE, "output is a terminal");
 
 	hdr->width = htonl(hdr->width);
 	hdr->height = htonl(hdr->height);
