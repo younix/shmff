@@ -24,7 +24,18 @@ Every pixel has to be copied through the piping buffer of the kernel.
 Thus, a pixel has to be read and written twice before it is transferred from
 one process to another.
 
-shmff solves this problem by keeping the image data in memory.
+shmff solves this problem by keeping the image data in memory and shares the
+access of this memory area with other processes.
+First, a program allocated a shared memory area and loads an image into it.
+Than, it communicates the identifier of this memory are to the next process
+via stdin/stdout.
+
+```
+ff2shm input.ff | resize 1280 1024 | grey | shm2ff output.ff
+```
+
+Thus, the interprocess communication effort is reduced to a minimum and the
+user interace is as simple as of the original farbfeld tool suite.
 
 # Tools
 
