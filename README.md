@@ -1,9 +1,30 @@
 # shmff
 
 shmff - *shared memory farbfeld* - is an image processing tool.
-It is prove of concept for fast image manipulation with the unix philosophy in
+It is a prove of concept for fast image manipulation with the unix philosophy in
 mind.
-shmff uses farbfeld as a general image representation format.
+shmff uses [farbfeld](https://tools.suckless.org/farbfeld/) as a general image
+representation format.
+
+# Introduction
+
+The original farbfeld tools utilize the shell piping mechanism to orchestrate an
+image manipulation tool chain.
+Thus, image processing is as easy as text processing.
+Instead of one bloated tool that tries to solve every problem, it is tools suite
+of single program for specific tasks.
+
+```
+jpg2ff input.jpg | resize 1280 1024 | grey | ff2png output.png
+```
+
+Piping image data from one process to another is the main disadvantage of
+farbfeld.
+Every pixel has to be copied through the piping buffer of the kernel.
+Thus, a pixel has to be read and written twice before it is transferred from
+one process to another.
+
+shmff solves this problem by keeping the image data in memory.
 
 # Tools
 

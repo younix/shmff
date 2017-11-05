@@ -1,8 +1,8 @@
 CC ?= cc
 #CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -D_XOPEN_SOURCE=500
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3
-CFLAGS += -DSSE2 -msse2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
-CFLAGS += -DAVX -mavx2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
+#CFLAGS += -DSSE2 -msse2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
+#CFLAGS += -DAVX -mavx2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
 
 #BINS = shmff dummy invert grey crop kernel gauss scale
 BINS = shmff dummy invert grey crop kernel gauss

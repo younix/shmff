@@ -62,8 +62,8 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	setshmff(&hdr_r, &ff_r);
-	setshmff(&hdr_w, &ff_w);
+	setshmff(&hdr_r, &ff_r, 0);
+	setshmff(&hdr_w, &ff_w, 1);
 	memmove(hdr_w, hdr_r, sizeof *hdr_r);
 
 	size_t px_n = hdr_r->width * hdr_r->height;

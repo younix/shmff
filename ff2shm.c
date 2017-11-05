@@ -15,7 +15,7 @@
 #include <unistd.h>
 
 #if __x86_64__ && (SSE2 || AVX)
-#include <immintrin.h>
+//#include <immintrin.h>
 #endif
 
 #include "shmff.h"
@@ -121,6 +121,7 @@ main(int argc, char *argv[])
 		ff[p].green = ntohs(ff[p].green);
 		ff[p].blue  = ntohs(ff[p].blue);
 		ff[p].alpha = ntohs(ff[p].alpha);
+//		ff[p].red, ff[p].green, ff[p].blue);
 	}
 
 #if __x86_64__ && AVX
@@ -169,7 +170,7 @@ main(int argc, char *argv[])
 		err(EXIT_FAILURE, "fclose");
 
 	struct shmff shmff;
-
+	memcpy(&shmff.magic, "sharedff", sizeof shmff.magic);
 	shmff.size = ff_size;
 	shmff.key = key;
 
