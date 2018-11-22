@@ -57,8 +57,8 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	/* read shmff structure from stdin */
-	if (shmff_load(&shmff, &hdr, &ff) == -1)
-		err(EXIT_FAILURE, "shmff_load");
+	if (shmff_read(&shmff, &hdr, &ff) == -1)
+		err(EXIT_FAILURE, "shmff_read");
 
 	debug(1, start, "start %d jobs", jobs);
 

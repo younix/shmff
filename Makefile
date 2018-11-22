@@ -1,6 +1,6 @@
 CC ?= cc
 #CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -D_XOPEN_SOURCE=500
-CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3
+CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -g
 #CFLAGS += -DSSE2 -msse2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
 #CFLAGS += -DAVX -mavx2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
 
@@ -8,12 +8,12 @@ CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3
 BINS = shmff dummy invert grey crop kernel gauss
 
 .PHONY: all install clean test
-all: ff2shm shm2ff dummy grey
+all: ff2shm shm2ff dummy grey avg
 clean:
 	rm -f $(BINS) *.o *.core
 
-ff2shm: ff2shm.c shmff.h
-	$(CC) $(CFLAGS) -o $@ ff2shm.c
+ff2shm: ff2shm.c shmff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ ff2shm.c libshmff.o
 
 shm2ff: shm2ff.c shmff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ shm2ff.c libshmff.o
@@ -24,13 +24,16 @@ install: ff2shm shm2ff dummy grey
 dummy: dummy.c shmff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ dummy.c libshmff.o
 
+avg: avg.c shmff.h libshmff.o
+	$(CC) $(CFLAGS) -o $@ avg.c libshmff.o
+
 grey: grey.c shmff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ grey.c libshmff.o
 
 # OLD STUFF #
 
-test: shmff invert grey dummy in.ff
-	./test.sh
+test: shm2ff dummy ff2shm in.ff
+	./ff2shm maria.ff | ./dummy | ./shm2ff tmp.ff && cmp maria.ff tmp.ff
 
 shmff: shmff.c ff.h
 	$(CC) $(CFLAGS) -o $@ shmff.c
@@ -60,4 +63,3 @@ gauss.S: gauss.c ff.h
 
 invert.S: invert.c ff.h
 	$(CC) $(CFLAGS) -S -c -o $@ invert.c
-

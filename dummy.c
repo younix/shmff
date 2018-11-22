@@ -12,16 +12,19 @@ main(void)
 	struct hdr *hdr;
 	struct px *ff;
 
-	/* read shmff structure from stdin */
-	if (shmff_load(&shmff, &hdr, &ff) == -1)
-		err(EXIT_FAILURE, "shmff_load");
+	for (;;) {
+		/* read shmff structure from stdin */
+		if (shmff_read(&shmff, &hdr, &ff) == -1) {
+			if (feof(stdin))
+				break;
+			err(EXIT_FAILURE, "shmff_read");
+		}
 
-	/* do some stuff with the pixels in ff ... */
+		/* do some stuff with the pixels in ff ... */
 
-	/* write shmff structure to stdout */
-	if (fwrite(&shmff, sizeof shmff, 1, stdout) < 1) {
-		perror("fwrite");
-		goto err;
+		/* write shmff structure to stdout */
+		if (shmff_write(&shmff) == -1)
+			goto err;
 	}
 
 	return EXIT_SUCCESS;

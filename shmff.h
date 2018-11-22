@@ -25,8 +25,11 @@ struct px {
 	uint16_t alpha;
 };
 
-int shmff_load(struct shmff *shmff, struct hdr **hdr, struct px **ff);
-int shmff_free(struct shmff *shmff, struct hdr *hdr);
+int file2shm(const char *, struct shmff *, struct hdr **, struct px **);
+void shm2file(const char *, struct hdr *, struct px *);
+int shmff_read(struct shmff *, struct hdr **, struct px **);
+int shmff_write(struct shmff *);
+int shmff_free(struct shmff *, struct hdr *);
 
 /* job control */
 

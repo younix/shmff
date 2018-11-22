@@ -82,6 +82,56 @@ benchmark_cmd(const char *cmd, struct shmff *shmff_r, struct shmff *shmff_w)
 	fprintf(stderr, "%" PRId64 " sec\n", end_time - start_time);
 }
 
+int
+file2shm(const char *file, struct shmhdr *shmhdr, struct px **ff)
+{
+	int shmid = -1;
+	struct hdr *shm;
+	key_t key;
+	FILE *fh = stdin;
+	size_t px_n = hdr->width * hdr->height;
+
+	if (file != NULL && (fh = fopen(file, "r")) == NULL)
+		err(EXIT_FAILURE, "fopen");
+
+	/* read header */
+	if (fread(hdr, sizeof *hdr, 1, fh) < 1)
+		err(EXIT_FAILURE, "fread");
+
+	hdr->width = ntohl(hdr->width);
+	hdr->height = ntohl(hdr->height);
+
+	/* generate name of shm segment by file path */
+	key = ftok(file, 0);
+
+	/* Create and attach the shm segment for reading. */
+	if ((shmid = shmget(key, ff_size, IPC_CREAT | 0600)) == -1)
+		err(EXIT_FAILURE, "shmget");
+
+	if ((shm = shmat(shmid, NULL, 0)) == (void *) -1)
+		err(EXIT_FAILURE, "shmat");
+
+	memcpy(shm, &hdr, sizeof hdr);
+
+	*ff = (struct px *)(shm + 1);
+
+	for (size_t p = 0; p < px_n; p++) {
+		if (fread(&ff[p], sizeof *ff, 1, fh) < 1)
+			err(EXIT_FAILURE, "unexpected end-of-file");
+
+		/* convert net endian to host endian */
+		*ff[p].red   = ntohs(ff[p].red);
+		*ff[p].green = ntohs(ff[p].green);
+		*ff[p].blue  = ntohs(ff[p].blue);
+		*ff[p].alpha = ntohs(ff[p].alpha);
+	}
+
+	if (file != NULL && fclose(fh) == EOF)
+		err(EXIT_FAILURE, "fclose");
+
+	return shmid;
+}
+
 void
 shm2file(const char *file, struct hdr *hdr, struct px *ff)
 {
@@ -98,10 +148,10 @@ shm2file(const char *file, struct hdr *hdr, struct px *ff)
 
 	/* save header */
 	if (fwrite(hdr, sizeof *hdr, 1, fh) < 1)
-		err(EXIT_FAILURE, "fread");
+		err(EXIT_FAILURE, "fwrite");
 
 	for (size_t p = 0; p < px_n; p++) {
-		/* convert net endian to host endian */
+		/* convert host endian to net endian */
 		ff[p].red   = htons(ff[p].red);
 		ff[p].green = htons(ff[p].green);
 		ff[p].blue  = htons(ff[p].blue);
