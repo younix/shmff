@@ -53,6 +53,4 @@ int catch_jobs(int jobs, int child);
 			fputc('\n', stderr);				\
 		}							\
 	} while (false)
-
-
 #endif

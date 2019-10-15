@@ -5,10 +5,10 @@ CFLAGS = -std=c99 -pedantic -Wall -Wextra -O3 -g
 #CFLAGS += -DAVX -mavx2 -I/usr/src/gnu/llvm/tools/clang/lib/Headers -Wno-pedantic
 
 #BINS = shmff dummy invert grey crop kernel gauss scale
-BINS = shmff dummy invert grey crop kernel gauss
+BINS = shmff dummy invert grey crop kernel gauss raw2shm
 
 .PHONY: all install clean test
-all: ff2shm shm2ff dummy grey avg
+all: ff2shm shm2ff dummy grey avg raw2shm
 clean:
 	rm -f $(BINS) *.o *.core
 
@@ -29,6 +29,9 @@ avg: avg.c shmff.h libshmff.o
 
 grey: grey.c shmff.h libshmff.o
 	$(CC) $(CFLAGS) -o $@ grey.c libshmff.o
+
+raw2shm: raw2shm.c
+	$(CC) $(CFLAGS) -o $@ raw2shm.c `pkg-config --cflags --libs libraw`
 
 # OLD STUFF #
 

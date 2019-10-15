@@ -7,8 +7,8 @@
 
 #include "shmff.h"
 
-#define MIN(a, b)\
-	((a) < (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
 
 int
 main(void)
@@ -66,14 +66,14 @@ main(void)
 			    UINT64_MAX - map[i].green < ff[i].green ||
 			    UINT64_MAX - map[i].blue < ff[i].blue)
 				errx(EXIT_FAILURE, "overflow");
-#if 1
+#if 0
 			map[i].red   += ff[i].red;
 			map[i].green += ff[i].green;
 			map[i].blue  += ff[i].blue;
 #else
-			map[i].red   = MIN(map[i].red, ff[i].red);
-			map[i].green = MIN(map[i].green, ff[i].green);
-			map[i].blue  = MIN(map[i].blue, ff[i].blue);
+			map[i].red   = MAX(map[i].red, ff[i].red);
+			map[i].green = MAX(map[i].green, ff[i].green);
+			map[i].blue  = MAX(map[i].blue, ff[i].blue);
 #endif
 		}
 
@@ -87,7 +87,7 @@ fprintf(stderr, "count: %zu\n", count);
 		return EXIT_FAILURE;
 
 	for (size_t i = 0; i < avg_hdr->width * avg_hdr->height; i++) {
-#if 1
+#if 0
 		avg_ff[i].red   = map[i].red / count;
 		avg_ff[i].green = map[i].green / count;
 		avg_ff[i].blue  = map[i].blue / count;
